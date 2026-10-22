@@ -7,7 +7,7 @@ function createRoomsController(roomsService) {
     },
 
     async getById(req, res) {
-      const id = Number(req.params.id);
+      const id = req.validated.params.id;
 
       const room = await roomsService.getRoomById(id);
 

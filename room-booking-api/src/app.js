@@ -1,5 +1,7 @@
 const express = require("express");
 
+const requestId = require("./middleware/requestId");
+
 const { createRoomsService } = require("./modules/rooms/rooms.service");
 
 const { createRoomsController } = require("./modules/rooms/rooms.controller");
@@ -20,6 +22,8 @@ const {
 
 function createApp({ roomsRepository, reservationsRepository }) {
   const app = express();
+
+  app.use(requestId);
 
   app.use(express.json());
 

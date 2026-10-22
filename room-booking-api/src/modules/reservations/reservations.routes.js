@@ -1,13 +1,39 @@
 const { Router } = require("express");
 
+const validate = require("../../middleware/validate");
+
+const {
+  idParams,
+  createReservationBody,
+  listReservationsQuery,
+} = require("./reservations.schemas");
+
 function createReservationsRouter(controller) {
   const router = Router();
 
-  router.get("/", controller.getAll);
+  router.get(
+    "/",
+    validate({
+      query: listReservationsQuery,
+    }),
+    controller.getAll,
+  );
 
-  router.post("/", controller.create);
+  router.post(
+    "/",
+    validate({
+      body: createReservationBody,
+    }),
+    controller.create,
+  );
 
-  router.patch("/:id/cancel", controller.cancel);
+  router.patch(
+    "/:id/cancel",
+    validate({
+      params: idParams,
+    }),
+    controller.cancel,
+  );
 
   return router;
 }
