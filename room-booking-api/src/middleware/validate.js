@@ -1,3 +1,5 @@
+const { ValidationError } = require("../errors/AppError");
+
 function validate(schemas) {
   return (req, res, next) => {
     const validated = {};
@@ -16,14 +18,7 @@ function validate(schemas) {
           message: issue.message,
         }));
 
-        return res.status(400).json({
-          error: {
-            code: "VALIDATION_ERROR",
-            message: "Validation failed",
-            details,
-            requestId: req.id,
-          },
-        });
+        return next(new ValidationError(details));
       }
 
       validated[part] = result.data;

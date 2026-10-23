@@ -5,6 +5,16 @@ function requestLogger(req, res, next) {
 
   res.set("X-Request-Id", req.id);
 
+  const start = process.hrtime.bigint();
+
+  res.on("finish", () => {
+    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+
+    console.log(
+      `[${req.id}] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms.toFixed(1)} ms)`,
+    );
+  });
+
   next();
 }
 

@@ -11,12 +11,6 @@ function createRoomsController(roomsService) {
 
       const room = await roomsService.getRoomById(id);
 
-      if (!room) {
-        return res.status(404).json({
-          message: "Room not found",
-        });
-      }
-
       res.json(room);
     },
   };
