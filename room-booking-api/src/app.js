@@ -1,9 +1,7 @@
 const express = require("express");
 
 const requestLogger = require("./middleware/requestLogger");
-
 const notFound = require("./middleware/notFound");
-
 const errorHandler = require("./middleware/errorHandler");
 
 const { createRoomsService } = require("./modules/rooms/rooms.service");
@@ -24,7 +22,7 @@ const {
   createReservationsRouter,
 } = require("./modules/reservations/reservations.routes");
 
-function createApp({ roomsRepository, reservationsRepository }) {
+function createApp({ roomsRepository, reservationsRepository, now }) {
   const app = express();
 
   app.use(requestLogger);
@@ -37,25 +35,21 @@ function createApp({ roomsRepository, reservationsRepository }) {
 
   const roomsController = createRoomsController(roomsService);
 
+  app.use("/api/rooms", createRoomsRouter(roomsController));
+
   const reservationsService = createReservationsService({
     roomsRepository,
     reservationsRepository,
+    now,
   });
 
   const reservationsController =
     createReservationsController(reservationsService);
 
-  app.use("/api/rooms", createRoomsRouter(roomsController));
-
   app.use(
     "/api/reservations",
     createReservationsRouter(reservationsController),
   );
-
-  // Tymczasowy endpoint do testu błędu 500
-  app.get("/api/debug/crash", async (req, res) => {
-    throw new Error("boom");
-  });
 
   app.use(notFound);
 
