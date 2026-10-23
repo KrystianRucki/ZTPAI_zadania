@@ -1,6 +1,6 @@
 const express = require("express");
 
-const requestId = require("./middleware/requestId");
+const requestLogger = require("./middleware/requestLogger");
 
 const { createRoomsService } = require("./modules/rooms/rooms.service");
 
@@ -23,15 +23,23 @@ const {
 function createApp({ roomsRepository, reservationsRepository }) {
   const app = express();
 
-  app.use(requestId);
+  // Nadaje requestId i ustawia nagłówek X-Request-Id
+  app.use(requestLogger);
 
+  // Parsuje JSON z request body
   app.use(express.json());
+
+  // Rooms
 
   const roomsService = createRoomsService({
     roomsRepository,
   });
 
   const roomsController = createRoomsController(roomsService);
+
+  app.use("/api/rooms", createRoomsRouter(roomsController));
+
+  // Reservations
 
   const reservationsService = createReservationsService({
     roomsRepository,
@@ -40,8 +48,6 @@ function createApp({ roomsRepository, reservationsRepository }) {
 
   const reservationsController =
     createReservationsController(reservationsService);
-
-  app.use("/api/rooms", createRoomsRouter(roomsController));
 
   app.use(
     "/api/reservations",

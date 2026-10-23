@@ -1,6 +1,6 @@
 const { randomUUID } = require("node:crypto");
 
-function requestId(req, res, next) {
+function requestLogger(req, res, next) {
   req.id = req.get("X-Request-Id") || randomUUID();
 
   res.set("X-Request-Id", req.id);
@@ -8,4 +8,4 @@ function requestId(req, res, next) {
   next();
 }
 
-module.exports = requestId;
+module.exports = requestLogger;
