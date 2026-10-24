@@ -8,6 +8,11 @@ const MIN_DURATION_MS = 15 * 60 * 1000;
 
 const MAX_DURATION_MS = 8 * 60 * 60 * 1000;
 
+const ALLOWED_TRANSITIONS = {
+  CONFIRMED: ["CANCELLED"],
+  CANCELLED: [],
+};
+
 function createReservationsService({
   roomsRepository,
   reservationsRepository,
@@ -129,13 +134,38 @@ function createReservationsService({
       throw new NotFoundError("Reservation");
     }
 
+    /*
+     * Operacja idempotentna.
+     * Jeżeli rezerwacja jest już anulowana,
+     * niczego ponownie nie zmieniamy.
+     */
     if (reservation.status === "CANCELLED") {
       return reservation;
     }
 
+    const targetStatus = "CANCELLED";
+
+    const allowedTransitions = ALLOWED_TRANSITIONS[reservation.status] ?? [];
+
+    if (!allowedTransitions.includes(targetStatus)) {
+      throw new ConflictError(
+        "Invalid reservation status transition",
+        "INVALID_STATUS_TRANSITION",
+      );
+    }
+
+    const currentTime = now();
+
+    if (new Date(reservation.startTime).getTime() <= currentTime.getTime()) {
+      throw new ConflictError(
+        "Reservation has already started",
+        "RESERVATION_ALREADY_STARTED",
+      );
+    }
+
     reservation.status = "CANCELLED";
 
-    reservation.cancelledAt = now();
+    reservation.cancelledAt = currentTime;
 
     await reservationsRepository.update(reservation);
 
@@ -151,4 +181,5 @@ function createReservationsService({
 
 module.exports = {
   createReservationsService,
+  ALLOWED_TRANSITIONS,
 };

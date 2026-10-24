@@ -1,3 +1,5 @@
+const { toReservationResponse } = require("./reservations.mapper");
+
 function createReservationsController(reservationsService) {
   return {
     async getAll(req, res) {
@@ -5,7 +7,7 @@ function createReservationsController(reservationsService) {
 
       const reservations = await reservationsService.getAllReservations(roomId);
 
-      res.json(reservations);
+      res.json(reservations.map(toReservationResponse));
     },
 
     async create(req, res) {
@@ -13,7 +15,10 @@ function createReservationsController(reservationsService) {
         req.validated.body,
       );
 
-      res.status(201).json(reservation);
+      res
+        .status(201)
+        .location(`/api/reservations/${reservation.id}`)
+        .json(toReservationResponse(reservation));
     },
 
     async cancel(req, res) {
@@ -21,7 +26,7 @@ function createReservationsController(reservationsService) {
 
       const reservation = await reservationsService.cancelReservation(id);
 
-      res.json(reservation);
+      res.json(toReservationResponse(reservation));
     },
   };
 }
