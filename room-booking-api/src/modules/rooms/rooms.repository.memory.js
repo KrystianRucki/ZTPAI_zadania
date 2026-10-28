@@ -2,33 +2,62 @@ function createInMemoryRoomsRepository() {
   const rooms = [
     {
       id: 1,
-      name: "A101",
+      buildingId: 1,
+      name: "101",
       capacity: 30,
+      createdAt: new Date(),
     },
     {
       id: 2,
-      name: "A102",
+      buildingId: 1,
+      name: "102",
       capacity: 20,
+      createdAt: new Date(),
     },
     {
       id: 3,
-      name: "B201",
+      buildingId: 1,
+      name: "201",
       capacity: 50,
+      createdAt: new Date(),
     },
     {
       id: 4,
-      name: "C301",
-      capacity: 10,
+      buildingId: 2,
+      name: "101",
+      capacity: 15,
+      createdAt: new Date(),
+    },
+    {
+      id: 5,
+      buildingId: 2,
+      name: "301",
+      capacity: 40,
+      createdAt: new Date(),
     },
   ];
 
+  let nextId = 6;
+
   return {
     async findAll() {
-      return rooms;
+      return [...rooms];
     },
 
     async findById(id) {
       return rooms.find((room) => room.id === id) ?? null;
+    },
+
+    async create(data) {
+      const room = {
+        id: nextId++,
+        ...data,
+        createdAt: new Date(),
+      };
+
+      rooms.push(room);
+
+      return room;
     },
   };
 }

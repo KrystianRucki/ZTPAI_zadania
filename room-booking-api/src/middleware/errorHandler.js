@@ -16,7 +16,17 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({
       error: {
         code: "INVALID_JSON",
-        message: "Request body is not valid JSON",
+        message: "Malformed JSON body",
+        requestId: req.id,
+      },
+    });
+  }
+
+  if (err.code === "23505") {
+    return res.status(409).json({
+      error: {
+        code: "UNIQUE_VIOLATION",
+        message: "Resource already exists",
         requestId: req.id,
       },
     });
@@ -24,7 +34,7 @@ function errorHandler(err, req, res, next) {
 
   console.error(`[${req.id}]`, err);
 
-  res.status(500).json({
+  return res.status(500).json({
     error: {
       code: "INTERNAL_ERROR",
       message: "Unexpected error",

@@ -2,7 +2,7 @@ const { Router } = require("express");
 
 const validate = require("../../middleware/validate");
 
-const { idParams } = require("./rooms.schemas");
+const { idParams, createRoomBody } = require("./rooms.schemas");
 
 function createRoomsRouter(controller) {
   const router = Router();
@@ -15,6 +15,14 @@ function createRoomsRouter(controller) {
       params: idParams,
     }),
     controller.getById,
+  );
+
+  router.post(
+    "/",
+    validate({
+      body: createRoomBody,
+    }),
+    controller.create,
   );
 
   return router;
