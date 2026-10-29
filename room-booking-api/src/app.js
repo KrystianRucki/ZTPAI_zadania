@@ -1,29 +1,37 @@
 const express = require("express");
 
 const requestLogger = require("./middleware/requestLogger");
+
 const notFound = require("./middleware/notFound");
+
 const errorHandler = require("./middleware/errorHandler");
 
 const {
   createBuildingsService,
 } = require("./modules/buildings/buildings.service");
+
 const {
   createBuildingsController,
 } = require("./modules/buildings/buildings.controller");
+
 const {
   createBuildingsRouter,
 } = require("./modules/buildings/buildings.routes");
 
 const { createRoomsService } = require("./modules/rooms/rooms.service");
+
 const { createRoomsController } = require("./modules/rooms/rooms.controller");
+
 const { createRoomsRouter } = require("./modules/rooms/rooms.routes");
 
 const {
   createReservationsService,
 } = require("./modules/reservations/reservations.service");
+
 const {
   createReservationsController,
 } = require("./modules/reservations/reservations.controller");
+
 const {
   createReservationsRouter,
 } = require("./modules/reservations/reservations.routes");
@@ -32,6 +40,7 @@ function createApp({
   buildingsRepository,
   roomsRepository,
   reservationsRepository,
+  runInTransaction,
   now,
 }) {
   const app = express();
@@ -52,19 +61,24 @@ function createApp({
   const reservationsService = createReservationsService({
     roomsRepository,
     reservationsRepository,
+    runInTransaction,
     now,
   });
 
-  app.use(
-    "/api/buildings",
-    createBuildingsRouter(createBuildingsController(buildingsService)),
-  );
+  const buildingsController = createBuildingsController(buildingsService);
 
-  app.use("/api/rooms", createRoomsRouter(createRoomsController(roomsService)));
+  const roomsController = createRoomsController(roomsService);
+
+  const reservationsController =
+    createReservationsController(reservationsService);
+
+  app.use("/api/buildings", createBuildingsRouter(buildingsController));
+
+  app.use("/api/rooms", createRoomsRouter(roomsController));
 
   app.use(
     "/api/reservations",
-    createReservationsRouter(createReservationsController(reservationsService)),
+    createReservationsRouter(reservationsController),
   );
 
   app.use(notFound);

@@ -43,6 +43,12 @@ function createKnexRoomsRepository(db) {
       return toRoom(row);
     },
 
+    async lockById(id) {
+      const row = await db("rooms").where({ id }).forUpdate().first();
+
+      return toRoom(row);
+    },
+
     async findByIdWithBuilding(id) {
       const row = await db("rooms as r")
         .join("buildings as b", "b.id", "r.building_id")

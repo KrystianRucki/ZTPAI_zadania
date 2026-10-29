@@ -16,6 +16,7 @@ const ALLOWED_TRANSITIONS = {
 function createReservationsService({
   roomsRepository,
   reservationsRepository,
+  runInTransaction,
   now = () => new Date(),
 }) {
   async function getAllReservations(query) {
@@ -45,103 +46,107 @@ function createReservationsService({
   }
 
   async function createReservation(input) {
-    const room = await roomsRepository.findById(input.roomId);
+    return runInTransaction(async ({ rooms, reservations }) => {
+      const room = await rooms.lockById(input.roomId);
 
-    if (!room) {
-      throw new NotFoundError("Room");
-    }
-
-    if (input.participants > room.capacity) {
-      throw new ConflictError(
-        "Room capacity exceeded",
-        "ROOM_CAPACITY_EXCEEDED",
-      );
-    }
-
-    const startTime = new Date(input.startTime);
-
-    const endTime = new Date(input.endTime);
-
-    const currentTime = now();
-
-    const start = startTime.getTime();
-
-    const end = endTime.getTime();
-
-    const current = currentTime.getTime();
-
-    const validationErrors = [];
-
-    if (end <= start) {
-      validationErrors.push({
-        location: "body",
-        field: "endTime",
-        message: "endTime must be later than startTime",
-      });
-    }
-
-    const duration = end - start;
-
-    if (end > start && duration < MIN_DURATION_MS) {
-      validationErrors.push({
-        location: "body",
-        field: "endTime",
-        message: "Reservation must last at least 15 minutes",
-      });
-    }
-
-    if (end > start && duration > MAX_DURATION_MS) {
-      validationErrors.push({
-        location: "body",
-        field: "endTime",
-        message: "Reservation cannot last longer than 8 hours",
-      });
-    }
-
-    if (start < current) {
-      validationErrors.push({
-        location: "body",
-        field: "startTime",
-        message: "startTime cannot be in the past",
-      });
-    }
-
-    if (validationErrors.length > 0) {
-      throw new ValidationError(validationErrors);
-    }
-
-    const roomReservations = await reservationsRepository.findByRoomId(
-      input.roomId,
-    );
-
-    const overlapping = roomReservations.some((reservation) => {
-      if (reservation.status !== "CONFIRMED") {
-        return false;
+      if (!room) {
+        throw new NotFoundError("Room");
       }
 
-      const existingStart = new Date(reservation.startTime).getTime();
+      if (input.participants > room.capacity) {
+        throw new ConflictError(
+          "Room capacity exceeded",
+          "ROOM_CAPACITY_EXCEEDED",
+        );
+      }
 
-      const existingEnd = new Date(reservation.endTime).getTime();
+      const startTime = new Date(input.startTime);
 
-      return start < existingEnd && existingStart < end;
-    });
+      const endTime = new Date(input.endTime);
 
-    if (overlapping) {
-      throw new ConflictError(
-        "Room is already booked in this time range",
-        "ROOM_ALREADY_BOOKED",
-      );
-    }
+      const currentTime = now();
 
-    return reservationsRepository.create({
-      roomId: input.roomId,
-      reservedBy: input.reservedBy,
-      participants: input.participants,
-      startTime,
-      endTime,
-      status: "CONFIRMED",
-      createdAt: currentTime,
-      cancelledAt: null,
+      const start = startTime.getTime();
+
+      const end = endTime.getTime();
+
+      const current = currentTime.getTime();
+
+      const validationErrors = [];
+
+      if (end <= start) {
+        validationErrors.push({
+          location: "body",
+          field: "endTime",
+          message: "endTime must be later than startTime",
+        });
+      }
+
+      const duration = end - start;
+
+      if (end > start && duration < MIN_DURATION_MS) {
+        validationErrors.push({
+          location: "body",
+          field: "endTime",
+          message: "Reservation must last at least 15 minutes",
+        });
+      }
+
+      if (end > start && duration > MAX_DURATION_MS) {
+        validationErrors.push({
+          location: "body",
+          field: "endTime",
+          message: "Reservation cannot last longer than 8 hours",
+        });
+      }
+
+      if (start < current) {
+        validationErrors.push({
+          location: "body",
+          field: "startTime",
+          message: "startTime cannot be in the past",
+        });
+      }
+
+      if (validationErrors.length > 0) {
+        throw new ValidationError(validationErrors);
+      }
+
+      const disableAppCheck = process.env.DISABLE_APP_OVERLAP_CHECK === "true";
+
+      if (!disableAppCheck) {
+        const roomReservations = await reservations.findByRoomId(input.roomId);
+
+        const overlapping = roomReservations.some((reservation) => {
+          if (reservation.status !== "CONFIRMED") {
+            return false;
+          }
+
+          const existingStart = new Date(reservation.startTime).getTime();
+
+          const existingEnd = new Date(reservation.endTime).getTime();
+
+          return start < existingEnd && existingStart < end;
+        });
+
+        if (overlapping) {
+          throw new ConflictError(
+            "Room is already booked in this time range",
+            "ROOM_ALREADY_BOOKED",
+          );
+        }
+      }
+
+      return reservations.create({
+        roomId: input.roomId,
+        reservedBy: input.reservedBy,
+        participants: input.participants,
+        startTime,
+        endTime,
+        status: "CONFIRMED",
+        createdAt: currentTime,
+        cancelledAt: null,
+      });
     });
   }
 
