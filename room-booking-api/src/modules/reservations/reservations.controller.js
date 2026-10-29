@@ -1,4 +1,7 @@
-const { toReservationResponse } = require("./reservations.mapper");
+const {
+  toReservationResponse,
+  toDetailedReservationResponse,
+} = require("./reservations.mapper");
 
 function createReservationsController(reservationsService) {
   return {
@@ -7,7 +10,15 @@ function createReservationsController(reservationsService) {
 
       const reservations = await reservationsService.getAllReservations(roomId);
 
-      res.json(reservations.map(toReservationResponse));
+      res.json(reservations.map(toDetailedReservationResponse));
+    },
+
+    async getById(req, res) {
+      const reservation = await reservationsService.getReservationById(
+        req.validated.params.id,
+      );
+
+      res.json(toDetailedReservationResponse(reservation));
     },
 
     async create(req, res) {
@@ -22,9 +33,9 @@ function createReservationsController(reservationsService) {
     },
 
     async cancel(req, res) {
-      const id = req.validated.params.id;
-
-      const reservation = await reservationsService.cancelReservation(id);
+      const reservation = await reservationsService.cancelReservation(
+        req.validated.params.id,
+      );
 
       res.json(toReservationResponse(reservation));
     },

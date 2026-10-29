@@ -5,7 +5,6 @@ const {
 } = require("../../errors/AppError");
 
 const MIN_DURATION_MS = 15 * 60 * 1000;
-
 const MAX_DURATION_MS = 8 * 60 * 60 * 1000;
 
 const ALLOWED_TRANSITIONS = {
@@ -19,11 +18,19 @@ function createReservationsService({
   now = () => new Date(),
 }) {
   async function getAllReservations(roomId) {
-    if (roomId !== undefined) {
-      return reservationsRepository.findByRoomId(roomId);
+    return reservationsRepository.findAllDetailed({
+      roomId,
+    });
+  }
+
+  async function getReservationById(id) {
+    const reservation = await reservationsRepository.findDetailedById(id);
+
+    if (!reservation) {
+      throw new NotFoundError("Reservation");
     }
 
-    return reservationsRepository.findAll();
+    return reservation;
   }
 
   async function createReservation(input) {
@@ -41,15 +48,11 @@ function createReservationsService({
     }
 
     const startTime = new Date(input.startTime);
-
     const endTime = new Date(input.endTime);
-
     const currentTime = now();
 
     const start = startTime.getTime();
-
     const end = endTime.getTime();
-
     const current = currentTime.getTime();
 
     const validationErrors = [];
@@ -134,11 +137,6 @@ function createReservationsService({
       throw new NotFoundError("Reservation");
     }
 
-    /*
-     * Operacja idempotentna.
-     * Jeżeli rezerwacja jest już anulowana,
-     * niczego ponownie nie zmieniamy.
-     */
     if (reservation.status === "CANCELLED") {
       return reservation;
     }
@@ -164,7 +162,6 @@ function createReservationsService({
     }
 
     reservation.status = "CANCELLED";
-
     reservation.cancelledAt = currentTime;
 
     await reservationsRepository.update(reservation);
@@ -174,6 +171,7 @@ function createReservationsService({
 
   return {
     getAllReservations,
+    getReservationById,
     createReservation,
     cancelReservation,
   };
@@ -181,5 +179,4 @@ function createReservationsService({
 
 module.exports = {
   createReservationsService,
-  ALLOWED_TRANSITIONS,
 };

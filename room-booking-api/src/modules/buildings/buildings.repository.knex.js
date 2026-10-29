@@ -14,9 +14,19 @@ function toBuilding(row) {
 function createKnexBuildingsRepository(db) {
   return {
     async findAll() {
-      const rows = await db("buildings").select("*").orderBy("id", "asc");
+      const rows = await db("buildings as b")
+        .leftJoin("rooms as r", "r.building_id", "b.id")
+        .select("b.id", "b.name", "b.address", "b.created_at")
+        .count({
+          rooms_count: "r.id",
+        })
+        .groupBy("b.id", "b.name", "b.address", "b.created_at")
+        .orderBy("b.id", "asc");
 
-      return rows.map(toBuilding);
+      return rows.map((row) => ({
+        ...toBuilding(row),
+        roomsCount: Number(row.rooms_count),
+      }));
     },
 
     async findById(id) {

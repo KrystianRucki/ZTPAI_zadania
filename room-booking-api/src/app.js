@@ -41,6 +41,7 @@ function createApp({
 
   const buildingsService = createBuildingsService({
     buildingsRepository,
+    roomsRepository,
   });
 
   const roomsService = createRoomsService({

@@ -16,6 +16,40 @@ function toReservation(row) {
   };
 }
 
+function toDetailedReservation(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+
+    room: {
+      id: row.room_id,
+      name: row.room_name,
+
+      building: {
+        id: row.building_id,
+        name: row.building_name,
+      },
+    },
+
+    reservedBy: row.reserved_by,
+    participants: row.participants,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    status: row.status,
+    createdAt: row.created_at,
+    cancelledAt: row.cancelled_at,
+  };
+}
+
+function detailedQuery(db) {
+  return db("reservations as res")
+    .join("rooms as r", "r.id", "res.room_id")
+    .join("buildings as b", "b.id", "r.building_id");
+}
+
 function createKnexReservationsRepository(db) {
   return {
     async findAll() {
@@ -38,6 +72,59 @@ function createKnexReservationsRepository(db) {
         .orderBy("id", "asc");
 
       return rows.map(toReservation);
+    },
+
+    async findDetailedById(id) {
+      const row = await detailedQuery(db)
+        .where("res.id", id)
+        .select(
+          "res.id",
+          "res.reserved_by",
+          "res.participants",
+          "res.start_time",
+          "res.end_time",
+          "res.status",
+          "res.created_at",
+          "res.cancelled_at",
+
+          "r.id as room_id",
+          "r.name as room_name",
+
+          "b.id as building_id",
+          "b.name as building_name",
+        )
+        .first();
+
+      return toDetailedReservation(row);
+    },
+
+    async findAllDetailed({ roomId } = {}) {
+      const query = detailedQuery(db);
+
+      if (roomId !== undefined) {
+        query.where("res.room_id", roomId);
+      }
+
+      const rows = await query
+        .select(
+          "res.id",
+          "res.reserved_by",
+          "res.participants",
+          "res.start_time",
+          "res.end_time",
+          "res.status",
+          "res.created_at",
+          "res.cancelled_at",
+
+          "r.id as room_id",
+          "r.name as room_name",
+
+          "b.id as building_id",
+          "b.name as building_name",
+        )
+        .orderBy("res.id", "asc");
+
+      return rows.map(toDetailedReservation);
     },
 
     async create(data) {

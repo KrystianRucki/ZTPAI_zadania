@@ -10,6 +10,14 @@ function createBuildingsRouter(controller) {
   router.get("/", controller.getAll);
 
   router.get(
+    "/:id/rooms",
+    validate({
+      params: idParams,
+    }),
+    controller.getRooms,
+  );
+
+  router.get(
     "/:id",
     validate({
       params: idParams,

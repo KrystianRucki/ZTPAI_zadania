@@ -1,5 +1,7 @@
 const { toBuildingResponse } = require("./buildings.mapper");
 
+const { toRoomResponse } = require("../rooms/rooms.mapper");
+
 function createBuildingsController(buildingsService) {
   return {
     async getAll(req, res) {
@@ -25,6 +27,14 @@ function createBuildingsController(buildingsService) {
         .status(201)
         .location(`/api/buildings/${building.id}`)
         .json(toBuildingResponse(building));
+    },
+
+    async getRooms(req, res) {
+      const rooms = await buildingsService.getRoomsByBuildingId(
+        req.validated.params.id,
+      );
+
+      res.json(rooms.map(toRoomResponse));
     },
   };
 }

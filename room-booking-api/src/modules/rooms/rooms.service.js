@@ -6,7 +6,7 @@ function createRoomsService({ roomsRepository, buildingsRepository }) {
   }
 
   async function getRoomById(id) {
-    const room = await roomsRepository.findById(id);
+    const room = await roomsRepository.findByIdWithBuilding(id);
 
     if (!room) {
       throw new NotFoundError("Room");

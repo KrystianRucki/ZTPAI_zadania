@@ -19,6 +19,14 @@ function createReservationsRouter(controller) {
     controller.getAll,
   );
 
+  router.get(
+    "/:id",
+    validate({
+      params: idParams,
+    }),
+    controller.getById,
+  );
+
   router.post(
     "/",
     validate({
