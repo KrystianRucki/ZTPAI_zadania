@@ -1,3 +1,9 @@
+const SORT_COLUMNS = {
+  startTime: "res.start_time",
+  createdAt: "res.created_at",
+  participants: "res.participants",
+};
+
 function toReservation(row) {
   if (!row) {
     return null;
@@ -50,6 +56,30 @@ function detailedQuery(db) {
     .join("buildings as b", "b.id", "r.building_id");
 }
 
+function applyFilters(query, filters) {
+  if (filters.roomId !== undefined) {
+    query.where("res.room_id", filters.roomId);
+  }
+
+  if (filters.buildingId !== undefined) {
+    query.where("r.building_id", filters.buildingId);
+  }
+
+  if (filters.status !== undefined) {
+    query.where("res.status", filters.status);
+  }
+
+  if (filters.from !== undefined) {
+    query.where("res.end_time", ">", filters.from);
+  }
+
+  if (filters.to !== undefined) {
+    query.where("res.start_time", "<", filters.to);
+  }
+
+  return query;
+}
+
 function createKnexReservationsRepository(db) {
   return {
     async findAll() {
@@ -98,33 +128,72 @@ function createKnexReservationsRepository(db) {
       return toDetailedReservation(row);
     },
 
-    async findAllDetailed({ roomId } = {}) {
-      const query = detailedQuery(db);
+    async findAllDetailed({
+      roomId,
+      buildingId,
+      status,
+      from,
+      to,
+      page,
+      limit,
+      sort,
+    }) {
+      const filters = {
+        roomId,
+        buildingId,
+        status,
+        from,
+        to,
+      };
 
-      if (roomId !== undefined) {
-        query.where("res.room_id", roomId);
-      }
+      const baseQuery = applyFilters(detailedQuery(db), filters);
 
-      const rows = await query
-        .select(
-          "res.id",
-          "res.reserved_by",
-          "res.participants",
-          "res.start_time",
-          "res.end_time",
-          "res.status",
-          "res.created_at",
-          "res.cancelled_at",
+      const descending = sort.startsWith("-");
 
-          "r.id as room_id",
-          "r.name as room_name",
+      const sortKey = descending ? sort.slice(1) : sort;
 
-          "b.id as building_id",
-          "b.name as building_name",
-        )
-        .orderBy("res.id", "asc");
+      const sortColumn = SORT_COLUMNS[sortKey];
 
-      return rows.map(toDetailedReservation);
+      const sortDirection = descending ? "desc" : "asc";
+
+      const offset = (page - 1) * limit;
+
+      const [rows, countResult] = await Promise.all([
+        baseQuery
+          .clone()
+          .select(
+            "res.id",
+            "res.reserved_by",
+            "res.participants",
+            "res.start_time",
+            "res.end_time",
+            "res.status",
+            "res.created_at",
+            "res.cancelled_at",
+
+            "r.id as room_id",
+            "r.name as room_name",
+
+            "b.id as building_id",
+            "b.name as building_name",
+          )
+          .orderBy(sortColumn, sortDirection)
+          .orderBy("res.id", "asc")
+          .limit(limit)
+          .offset(offset),
+
+        baseQuery
+          .clone()
+          .count({
+            count: "res.id",
+          })
+          .first(),
+      ]);
+
+      return {
+        items: rows.map(toDetailedReservation),
+        total: Number(countResult.count),
+      };
     },
 
     async create(data) {

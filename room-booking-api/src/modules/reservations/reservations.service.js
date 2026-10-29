@@ -5,6 +5,7 @@ const {
 } = require("../../errors/AppError");
 
 const MIN_DURATION_MS = 15 * 60 * 1000;
+
 const MAX_DURATION_MS = 8 * 60 * 60 * 1000;
 
 const ALLOWED_TRANSITIONS = {
@@ -17,10 +18,20 @@ function createReservationsService({
   reservationsRepository,
   now = () => new Date(),
 }) {
-  async function getAllReservations(roomId) {
-    return reservationsRepository.findAllDetailed({
-      roomId,
-    });
+  async function getAllReservations(query) {
+    const { items, total } =
+      await reservationsRepository.findAllDetailed(query);
+
+    return {
+      items,
+
+      meta: {
+        page: query.page,
+        limit: query.limit,
+        total,
+        totalPages: Math.ceil(total / query.limit),
+      },
+    };
   }
 
   async function getReservationById(id) {
@@ -48,11 +59,15 @@ function createReservationsService({
     }
 
     const startTime = new Date(input.startTime);
+
     const endTime = new Date(input.endTime);
+
     const currentTime = now();
 
     const start = startTime.getTime();
+
     const end = endTime.getTime();
+
     const current = currentTime.getTime();
 
     const validationErrors = [];
@@ -162,6 +177,7 @@ function createReservationsService({
     }
 
     reservation.status = "CANCELLED";
+
     reservation.cancelledAt = currentTime;
 
     await reservationsRepository.update(reservation);
