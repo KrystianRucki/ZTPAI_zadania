@@ -112,29 +112,25 @@ function createReservationsService({
         throw new ValidationError(validationErrors);
       }
 
-      const disableAppCheck = process.env.DISABLE_APP_OVERLAP_CHECK === "true";
+      const roomReservations = await reservations.findByRoomId(input.roomId);
 
-      if (!disableAppCheck) {
-        const roomReservations = await reservations.findByRoomId(input.roomId);
-
-        const overlapping = roomReservations.some((reservation) => {
-          if (reservation.status !== "CONFIRMED") {
-            return false;
-          }
-
-          const existingStart = new Date(reservation.startTime).getTime();
-
-          const existingEnd = new Date(reservation.endTime).getTime();
-
-          return start < existingEnd && existingStart < end;
-        });
-
-        if (overlapping) {
-          throw new ConflictError(
-            "Room is already booked in this time range",
-            "ROOM_ALREADY_BOOKED",
-          );
+      const overlapping = roomReservations.some((reservation) => {
+        if (reservation.status !== "CONFIRMED") {
+          return false;
         }
+
+        const existingStart = new Date(reservation.startTime).getTime();
+
+        const existingEnd = new Date(reservation.endTime).getTime();
+
+        return start < existingEnd && existingStart < end;
+      });
+
+      if (overlapping) {
+        throw new ConflictError(
+          "Room is already booked in this time range",
+          "ROOM_ALREADY_BOOKED",
+        );
       }
 
       return reservations.create({
