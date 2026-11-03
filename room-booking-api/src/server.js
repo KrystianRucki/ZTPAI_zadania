@@ -11,6 +11,7 @@ const mode = process.env.REPOSITORY_MODE ?? "knex";
 let buildingsRepository;
 let roomsRepository;
 let reservationsRepository;
+let usersRepository;
 let runInTransaction;
 
 if (mode === "memory") {
@@ -26,11 +27,17 @@ if (mode === "memory") {
     createInMemoryReservationsRepository,
   } = require("./modules/reservations/reservations.repository.memory");
 
+  const {
+    createInMemoryUsersRepository,
+  } = require("./modules/auth/users.repository.memory");
+
   buildingsRepository = createInMemoryBuildingsRepository();
 
   roomsRepository = createInMemoryRoomsRepository();
 
   reservationsRepository = createInMemoryReservationsRepository();
+
+  usersRepository = createInMemoryUsersRepository();
 
   runInTransaction = async (fn) =>
     fn({
@@ -38,6 +45,7 @@ if (mode === "memory") {
 
       rooms: {
         ...roomsRepository,
+
         lockById: roomsRepository.findById,
       },
 
@@ -58,6 +66,10 @@ if (mode === "memory") {
     createKnexReservationsRepository,
   } = require("./modules/reservations/reservations.repository.knex");
 
+  const {
+    createKnexUsersRepository,
+  } = require("./modules/auth/users.repository.knex");
+
   const { createKnexUnitOfWork } = require("./db/unitOfWork");
 
   buildingsRepository = createKnexBuildingsRepository(db);
@@ -66,6 +78,8 @@ if (mode === "memory") {
 
   reservationsRepository = createKnexReservationsRepository(db);
 
+  usersRepository = createKnexUsersRepository(db);
+
   runInTransaction = createKnexUnitOfWork(db);
 }
 
@@ -73,6 +87,7 @@ const app = createApp({
   buildingsRepository,
   roomsRepository,
   reservationsRepository,
+  usersRepository,
   runInTransaction,
 });
 

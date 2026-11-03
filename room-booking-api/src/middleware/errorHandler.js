@@ -1,6 +1,18 @@
 const { AppError } = require("../errors/AppError");
 
 function errorHandler(err, req, res, next) {
+  if (err.code === "23505" && err.constraint === "users_email_unique") {
+    return res.status(409).json({
+      error: {
+        code: "EMAIL_TAKEN",
+
+        message: "Email already registered",
+
+        requestId: req.id,
+      },
+    });
+  }
+
   if (err.code === "23505") {
     return res.status(409).json({
       error: {

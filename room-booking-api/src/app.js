@@ -6,6 +6,12 @@ const notFound = require("./middleware/notFound");
 
 const errorHandler = require("./middleware/errorHandler");
 
+const { createAuthService } = require("./modules/auth/auth.service");
+
+const { createAuthController } = require("./modules/auth/auth.controller");
+
+const { createAuthRouter } = require("./modules/auth/auth.routes");
+
 const {
   createBuildingsService,
 } = require("./modules/buildings/buildings.service");
@@ -40,6 +46,7 @@ function createApp({
   buildingsRepository,
   roomsRepository,
   reservationsRepository,
+  usersRepository,
   runInTransaction,
   now,
 }) {
@@ -47,6 +54,10 @@ function createApp({
 
   app.use(requestLogger);
   app.use(express.json());
+
+  const authService = createAuthService({
+    usersRepository,
+  });
 
   const buildingsService = createBuildingsService({
     buildingsRepository,
@@ -65,12 +76,16 @@ function createApp({
     now,
   });
 
+  const authController = createAuthController(authService);
+
   const buildingsController = createBuildingsController(buildingsService);
 
   const roomsController = createRoomsController(roomsService);
 
   const reservationsController =
     createReservationsController(reservationsService);
+
+  app.use("/api/auth", createAuthRouter(authController));
 
   app.use("/api/buildings", createBuildingsRouter(buildingsController));
 
