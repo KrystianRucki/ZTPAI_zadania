@@ -2,6 +2,7 @@ const {
   NotFoundError,
   ConflictError,
   ValidationError,
+  ForbiddenError,
 } = require("../../errors/AppError");
 
 const MIN_DURATION_MS = 15 * 60 * 1000;
@@ -10,6 +11,7 @@ const MAX_DURATION_MS = 8 * 60 * 60 * 1000;
 
 const ALLOWED_TRANSITIONS = {
   CONFIRMED: ["CANCELLED"],
+
   CANCELLED: [],
 };
 
@@ -19,27 +21,49 @@ function createReservationsService({
   runInTransaction,
   now = () => new Date(),
 }) {
-  async function getAllReservations(query) {
+  async function getAllReservations(query, currentUser) {
+    if (currentUser.role === "USER" && query.userId !== undefined) {
+      throw new ForbiddenError("Only ADMIN can filter reservations by userId");
+    }
+
+    const effectiveQuery = {
+      ...query,
+    };
+
+    if (currentUser.role === "USER") {
+      effectiveQuery.userId = currentUser.id;
+    }
+
     const { items, total } =
-      await reservationsRepository.findAllDetailed(query);
+      await reservationsRepository.findAllDetailed(effectiveQuery);
 
     return {
       items,
 
       meta: {
-        page: query.page,
-        limit: query.limit,
+        page: effectiveQuery.page,
+
+        limit: effectiveQuery.limit,
+
         total,
 
-        totalPages: Math.ceil(total / query.limit),
+        totalPages: Math.ceil(total / effectiveQuery.limit),
       },
     };
   }
 
-  async function getReservationById(id) {
+  async function getReservationById(id, currentUser) {
     const reservation = await reservationsRepository.findDetailedById(id);
 
     if (!reservation) {
+      throw new NotFoundError("Reservation");
+    }
+
+    const isOwner = reservation.user.id === currentUser.id;
+
+    const isAdmin = currentUser.role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
       throw new NotFoundError("Reservation");
     }
 
@@ -78,6 +102,7 @@ function createReservationsService({
       if (end <= start) {
         validationErrors.push({
           location: "body",
+
           field: "endTime",
 
           message: "endTime must be later than startTime",
@@ -89,6 +114,7 @@ function createReservationsService({
       if (end > start && duration < MIN_DURATION_MS) {
         validationErrors.push({
           location: "body",
+
           field: "endTime",
 
           message: "Reservation must last at least 15 minutes",
@@ -98,6 +124,7 @@ function createReservationsService({
       if (end > start && duration > MAX_DURATION_MS) {
         validationErrors.push({
           location: "body",
+
           field: "endTime",
 
           message: "Reservation cannot last longer than 8 hours",
@@ -107,6 +134,7 @@ function createReservationsService({
       if (start < current) {
         validationErrors.push({
           location: "body",
+
           field: "startTime",
 
           message: "startTime cannot be in the past",
@@ -141,8 +169,6 @@ function createReservationsService({
       return reservations.create({
         roomId: input.roomId,
 
-        // Właściciel pochodzi
-        // wyłącznie z tokenu.
         userId: currentUser.id,
 
         participants: input.participants,
@@ -159,10 +185,18 @@ function createReservationsService({
     });
   }
 
-  async function cancelReservation(id) {
+  async function cancelReservation(id, currentUser) {
     const reservation = await reservationsRepository.findById(id);
 
     if (!reservation) {
+      throw new NotFoundError("Reservation");
+    }
+
+    const isOwner = reservation.user.id === currentUser.id;
+
+    const isAdmin = currentUser.role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
       throw new NotFoundError("Reservation");
     }
 

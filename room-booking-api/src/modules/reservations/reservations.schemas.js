@@ -28,6 +28,8 @@ const listReservationsQuery = z
 
     buildingId: z.coerce.number().int().positive().optional(),
 
+    userId: z.coerce.number().int().positive().optional(),
+
     status: z.enum(["CONFIRMED", "CANCELLED"]).optional(),
 
     from: z
@@ -68,7 +70,9 @@ const listReservationsQuery = z
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
+
         path: ["to"],
+
         message: "to must be later than from",
       });
     }

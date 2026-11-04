@@ -1,6 +1,8 @@
 const SORT_COLUMNS = {
   startTime: "res.start_time",
+
   createdAt: "res.created_at",
+
   participants: "res.participants",
 };
 
@@ -16,6 +18,7 @@ function toReservation(row) {
 
     user: {
       id: row.user_id,
+
       email: row.user_email,
     },
 
@@ -43,16 +46,19 @@ function toDetailedReservation(row) {
 
     room: {
       id: row.room_id,
+
       name: row.room_name,
 
       building: {
         id: row.building_id,
+
         name: row.building_name,
       },
     },
 
     user: {
       id: row.user_id,
+
       email: row.user_email,
     },
 
@@ -126,6 +132,10 @@ function applyFilters(query, filters) {
     query.where("r.building_id", filters.buildingId);
   }
 
+  if (filters.userId !== undefined) {
+    query.where("res.user_id", filters.userId);
+  }
+
   if (filters.status !== undefined) {
     query.where("res.status", filters.status);
   }
@@ -179,6 +189,7 @@ function createKnexReservationsRepository(db) {
     async findAllDetailed({
       roomId,
       buildingId,
+      userId,
       status,
       from,
       to,
@@ -189,6 +200,7 @@ function createKnexReservationsRepository(db) {
       const filters = {
         roomId,
         buildingId,
+        userId,
         status,
         from,
         to,

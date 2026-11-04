@@ -2,6 +2,8 @@ const { Router } = require("express");
 
 const validate = require("../../middleware/validate");
 
+const authorize = require("../../middleware/authorize");
+
 const { idParams, createRoomBody } = require("./rooms.schemas");
 
 function createRoomsRouter(controller) {
@@ -19,6 +21,7 @@ function createRoomsRouter(controller) {
 
   router.post(
     "/",
+    authorize("ADMIN"),
     validate({
       body: createRoomBody,
     }),

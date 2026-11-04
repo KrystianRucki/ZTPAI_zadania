@@ -8,10 +8,12 @@ function createReservationsController(reservationsService) {
     async getAll(req, res) {
       const { items, meta } = await reservationsService.getAllReservations(
         req.validated.query,
+        req.user,
       );
 
       res.json({
         data: items.map(toDetailedReservationResponse),
+
         meta,
       });
     },
@@ -19,6 +21,8 @@ function createReservationsController(reservationsService) {
     async getById(req, res) {
       const reservation = await reservationsService.getReservationById(
         req.validated.params.id,
+
+        req.user,
       );
 
       res.json(toDetailedReservationResponse(reservation));
@@ -39,6 +43,8 @@ function createReservationsController(reservationsService) {
     async cancel(req, res) {
       const reservation = await reservationsService.cancelReservation(
         req.validated.params.id,
+
+        req.user,
       );
 
       res.json(toReservationResponse(reservation));
