@@ -2,9 +2,9 @@ const { Router } = require("express");
 
 const validate = require("../../middleware/validate");
 
-const { registerBody } = require("./auth.schemas");
+const { registerBody, loginBody } = require("./auth.schemas");
 
-function createAuthRouter(controller) {
+function createAuthRouter({ controller, authenticate }) {
   const router = Router();
 
   router.post(
@@ -14,6 +14,16 @@ function createAuthRouter(controller) {
     }),
     controller.register,
   );
+
+  router.post(
+    "/login",
+    validate({
+      body: loginBody,
+    }),
+    controller.login,
+  );
+
+  router.get("/me", authenticate, controller.me);
 
   return router;
 }

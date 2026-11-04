@@ -16,6 +16,20 @@ const registerBody = z
   })
   .strict();
 
+const loginBody = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email()
+      .max(254)
+      .transform((value) => value.toLowerCase()),
+
+    password: z.string().min(1).max(72),
+  })
+  .strict();
+
 module.exports = {
   registerBody,
+  loginBody,
 };

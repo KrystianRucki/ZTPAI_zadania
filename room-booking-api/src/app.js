@@ -6,6 +6,8 @@ const notFound = require("./middleware/notFound");
 
 const errorHandler = require("./middleware/errorHandler");
 
+const { createAuthenticate } = require("./middleware/authenticate");
+
 const { createAuthService } = require("./modules/auth/auth.service");
 
 const { createAuthController } = require("./modules/auth/auth.controller");
@@ -48,6 +50,8 @@ function createApp({
   reservationsRepository,
   usersRepository,
   runInTransaction,
+  jwtSecret,
+  jwtExpiresIn,
   now,
 }) {
   const app = express();
@@ -55,8 +59,12 @@ function createApp({
   app.use(requestLogger);
   app.use(express.json());
 
+  const authenticate = createAuthenticate(jwtSecret);
+
   const authService = createAuthService({
     usersRepository,
+    jwtSecret,
+    jwtExpiresIn,
   });
 
   const buildingsService = createBuildingsService({
@@ -85,7 +93,14 @@ function createApp({
   const reservationsController =
     createReservationsController(reservationsService);
 
-  app.use("/api/auth", createAuthRouter(authController));
+  app.use(
+    "/api/auth",
+    createAuthRouter({
+      controller: authController,
+
+      authenticate,
+    }),
+  );
 
   app.use("/api/buildings", createBuildingsRouter(buildingsController));
 

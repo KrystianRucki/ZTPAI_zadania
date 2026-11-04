@@ -3,8 +3,11 @@ class AppError extends Error {
     super(message);
 
     this.name = this.constructor.name;
+
     this.statusCode = statusCode;
+
     this.code = code;
+
     this.details = details;
   }
 }
@@ -27,9 +30,16 @@ class ConflictError extends AppError {
   }
 }
 
+class UnauthorizedError extends AppError {
+  constructor(message = "Authentication required") {
+    super(message, 401, "UNAUTHORIZED");
+  }
+}
+
 module.exports = {
   AppError,
   ValidationError,
   NotFoundError,
   ConflictError,
+  UnauthorizedError,
 };

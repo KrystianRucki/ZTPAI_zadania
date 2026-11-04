@@ -8,6 +8,10 @@ try {
 
 const mode = process.env.REPOSITORY_MODE ?? "knex";
 
+const jwtSecret = process.env.JWT_SECRET;
+
+const jwtExpiresIn = process.env.JWT_EXPIRES_IN ?? "15m";
+
 let buildingsRepository;
 let roomsRepository;
 let reservationsRepository;
@@ -89,6 +93,8 @@ const app = createApp({
   reservationsRepository,
   usersRepository,
   runInTransaction,
+  jwtSecret,
+  jwtExpiresIn,
 });
 
 app.listen(3000, () => {
