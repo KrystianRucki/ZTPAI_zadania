@@ -1,5 +1,9 @@
 const express = require("express");
 
+const swaggerUi = require("swagger-ui-express");
+
+const openapiDocument = require("./docs/openapi");
+
 const requestLogger = require("./middleware/requestLogger");
 
 const notFound = require("./middleware/notFound");
@@ -7,12 +11,6 @@ const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
 
 const { createAuthenticate } = require("./middleware/authenticate");
-
-const { createAuthService } = require("./modules/auth/auth.service");
-
-const { createAuthController } = require("./modules/auth/auth.controller");
-
-const { createAuthRouter } = require("./modules/auth/auth.routes");
 
 const {
   createBuildingsService,
@@ -44,6 +42,12 @@ const {
   createReservationsRouter,
 } = require("./modules/reservations/reservations.routes");
 
+const { createAuthService } = require("./modules/auth/auth.service");
+
+const { createAuthController } = require("./modules/auth/auth.controller");
+
+const { createAuthRouter } = require("./modules/auth/auth.routes");
+
 function createApp({
   buildingsRepository,
   roomsRepository,
@@ -52,7 +56,7 @@ function createApp({
   runInTransaction,
   jwtSecret,
   jwtExpiresIn,
-  now,
+  now = () => new Date(),
 }) {
   const app = express();
 
@@ -60,7 +64,9 @@ function createApp({
 
   app.use(express.json());
 
-  const authenticate = createAuthenticate(jwtSecret);
+  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
+
+  const requireAuth = createAuthenticate(jwtSecret);
 
   const authService = createAuthService({
     usersRepository,
@@ -68,15 +74,21 @@ function createApp({
     jwtExpiresIn,
   });
 
+  const authController = createAuthController(authService);
+
   const buildingsService = createBuildingsService({
     buildingsRepository,
     roomsRepository,
   });
 
+  const buildingsController = createBuildingsController(buildingsService);
+
   const roomsService = createRoomsService({
     roomsRepository,
     buildingsRepository,
   });
+
+  const roomsController = createRoomsController(roomsService);
 
   const reservationsService = createReservationsService({
     roomsRepository,
@@ -84,12 +96,6 @@ function createApp({
     runInTransaction,
     now,
   });
-
-  const authController = createAuthController(authService);
-
-  const buildingsController = createBuildingsController(buildingsService);
-
-  const roomsController = createRoomsController(roomsService);
 
   const reservationsController =
     createReservationsController(reservationsService);
@@ -99,25 +105,26 @@ function createApp({
     createAuthRouter({
       controller: authController,
 
-      authenticate,
+      authenticate: requireAuth,
     }),
   );
 
   app.use(
     "/api/buildings",
-    authenticate,
+    requireAuth,
     createBuildingsRouter(buildingsController),
   );
 
-  app.use("/api/rooms", authenticate, createRoomsRouter(roomsController));
+  app.use("/api/rooms", requireAuth, createRoomsRouter(roomsController));
 
   app.use(
     "/api/reservations",
-    authenticate,
+    requireAuth,
     createReservationsRouter(reservationsController),
   );
 
   app.use(notFound);
+
   app.use(errorHandler);
 
   return app;

@@ -1,16 +1,6 @@
+const config = require("./config");
+
 const { createApp } = require("./app");
-
-try {
-  process.loadEnvFile();
-} catch {
-  // .env może nie istnieć
-}
-
-const mode = process.env.REPOSITORY_MODE ?? "knex";
-
-const jwtSecret = process.env.JWT_SECRET;
-
-const jwtExpiresIn = process.env.JWT_EXPIRES_IN ?? "15m";
 
 let buildingsRepository;
 let roomsRepository;
@@ -18,7 +8,7 @@ let reservationsRepository;
 let usersRepository;
 let runInTransaction;
 
-if (mode === "memory") {
+if (config.REPOSITORY_MODE === "memory") {
   const {
     createInMemoryBuildingsRepository,
   } = require("./modules/buildings/buildings.repository.memory");
@@ -46,13 +36,7 @@ if (mode === "memory") {
   runInTransaction = async (fn) =>
     fn({
       buildings: buildingsRepository,
-
-      rooms: {
-        ...roomsRepository,
-
-        lockById: roomsRepository.findById,
-      },
-
+      rooms: roomsRepository,
       reservations: reservationsRepository,
     });
 } else {
@@ -93,10 +77,14 @@ const app = createApp({
   reservationsRepository,
   usersRepository,
   runInTransaction,
-  jwtSecret,
-  jwtExpiresIn,
+
+  jwtSecret: config.JWT_SECRET,
+
+  jwtExpiresIn: config.JWT_EXPIRES_IN,
 });
 
-app.listen(3000, () => {
-  console.log(`Server running on http://localhost:3000 (${mode})`);
+app.listen(config.PORT, () => {
+  console.log(
+    `Server running on http://localhost:${config.PORT} (${config.REPOSITORY_MODE})`,
+  );
 });
