@@ -10,8 +10,6 @@ const createReservationBody = z
   .object({
     roomId: z.number().int().positive(),
 
-    reservedBy: z.string().trim().min(2).max(100),
-
     participants: z.number().int().positive(),
 
     startTime: z.string().datetime({

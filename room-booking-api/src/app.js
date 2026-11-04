@@ -57,6 +57,7 @@ function createApp({
   const app = express();
 
   app.use(requestLogger);
+
   app.use(express.json());
 
   const authenticate = createAuthenticate(jwtSecret);
@@ -102,12 +103,17 @@ function createApp({
     }),
   );
 
-  app.use("/api/buildings", createBuildingsRouter(buildingsController));
+  app.use(
+    "/api/buildings",
+    authenticate,
+    createBuildingsRouter(buildingsController),
+  );
 
-  app.use("/api/rooms", createRoomsRouter(roomsController));
+  app.use("/api/rooms", authenticate, createRoomsRouter(roomsController));
 
   app.use(
     "/api/reservations",
+    authenticate,
     createReservationsRouter(reservationsController),
   );
 

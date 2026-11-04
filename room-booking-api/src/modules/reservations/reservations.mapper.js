@@ -1,8 +1,15 @@
 function toReservationResponse(reservation) {
   return {
     id: reservation.id,
+
     roomId: reservation.roomId,
-    reservedBy: reservation.reservedBy,
+
+    user: {
+      id: reservation.user.id,
+
+      email: reservation.user.email,
+    },
+
     participants: reservation.participants,
 
     startTime: new Date(reservation.startTime).toISOString(),
@@ -25,15 +32,22 @@ function toDetailedReservationResponse(reservation) {
 
     room: {
       id: reservation.room.id,
+
       name: reservation.room.name,
 
       building: {
         id: reservation.room.building.id,
+
         name: reservation.room.building.name,
       },
     },
 
-    reservedBy: reservation.reservedBy,
+    user: {
+      id: reservation.user.id,
+
+      email: reservation.user.email,
+    },
+
     participants: reservation.participants,
 
     startTime: new Date(reservation.startTime).toISOString(),

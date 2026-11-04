@@ -30,6 +30,7 @@ function createReservationsService({
         page: query.page,
         limit: query.limit,
         total,
+
         totalPages: Math.ceil(total / query.limit),
       },
     };
@@ -45,7 +46,7 @@ function createReservationsService({
     return reservation;
   }
 
-  async function createReservation(input) {
+  async function createReservation(input, currentUser) {
     return runInTransaction(async ({ rooms, reservations }) => {
       const room = await rooms.lockById(input.roomId);
 
@@ -78,6 +79,7 @@ function createReservationsService({
         validationErrors.push({
           location: "body",
           field: "endTime",
+
           message: "endTime must be later than startTime",
         });
       }
@@ -88,6 +90,7 @@ function createReservationsService({
         validationErrors.push({
           location: "body",
           field: "endTime",
+
           message: "Reservation must last at least 15 minutes",
         });
       }
@@ -96,6 +99,7 @@ function createReservationsService({
         validationErrors.push({
           location: "body",
           field: "endTime",
+
           message: "Reservation cannot last longer than 8 hours",
         });
       }
@@ -104,6 +108,7 @@ function createReservationsService({
         validationErrors.push({
           location: "body",
           field: "startTime",
+
           message: "startTime cannot be in the past",
         });
       }
@@ -135,12 +140,20 @@ function createReservationsService({
 
       return reservations.create({
         roomId: input.roomId,
-        reservedBy: input.reservedBy,
+
+        // Właściciel pochodzi
+        // wyłącznie z tokenu.
+        userId: currentUser.id,
+
         participants: input.participants,
+
         startTime,
         endTime,
+
         status: "CONFIRMED",
+
         createdAt: currentTime,
+
         cancelledAt: null,
       });
     });
