@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:unit": "jest --config jest.config.js --runInBand"
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "jest --config jest.config.js --runInBand tests/unit",
+    "test:integration": "jest --config jest.config.js --runInBand tests/integration"
   },
   "keywords": [],
   "author": "",
