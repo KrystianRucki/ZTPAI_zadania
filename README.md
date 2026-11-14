@@ -1,2 +1,84 @@
-# ZTPAI_zadania
-zadania z zajec projektowych ztpai
+# Room Booking API
+
+Room Booking API implemented with Node.js, Express, PostgreSQL and Knex.
+
+## Requirements
+
+- Docker
+- Docker Compose
+- Git
+
+## Run with Docker Compose
+
+Clone the repository:
+
+```bash
+git clone https://github.com/KrystianRucki/ZTPAI_zadania
+cd room-booking-api
+```
+
+Create the environment configuration:
+
+### Linux / macOS
+
+```bash
+cp .env.example .env
+```
+
+### Windows PowerShell
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Build and start the application:
+
+```bash
+docker compose up --build
+```
+
+The API is available at:
+
+```text
+http://localhost:3000
+```
+
+Swagger UI:
+
+```text
+http://localhost:3000/api/docs/
+```
+
+## Seed database
+
+To run database seeds inside the API container:
+
+```bash
+docker compose exec api npx knex seed:run
+```
+
+## Stop application
+
+```bash
+docker compose down
+```
+
+## Tests
+
+Unit tests:
+
+```bash
+npm run test:unit
+```
+
+Integration tests:
+
+```bash
+npm run test:integration
+```
+
+All tests:
+
+```bash
+npm test
+```

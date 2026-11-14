@@ -8,6 +8,8 @@ let reservationsRepository;
 let usersRepository;
 let runInTransaction;
 
+let db = null;
+
 if (config.REPOSITORY_MODE === "memory") {
   const {
     createInMemoryBuildingsRepository,
@@ -40,7 +42,7 @@ if (config.REPOSITORY_MODE === "memory") {
       reservations: reservationsRepository,
     });
 } else {
-  const db = require("./db/knex");
+  db = require("./db/knex");
 
   const {
     createKnexBuildingsRepository,
@@ -79,12 +81,55 @@ const app = createApp({
   runInTransaction,
 
   jwtSecret: config.JWT_SECRET,
-
   jwtExpiresIn: config.JWT_EXPIRES_IN,
 });
 
-app.listen(config.PORT, () => {
+const server = app.listen(config.PORT, () => {
   console.log(
     `Server running on http://localhost:${config.PORT} (${config.REPOSITORY_MODE})`,
   );
+});
+
+let shuttingDown = false;
+
+async function shutdown(signal) {
+  if (shuttingDown) {
+    return;
+  }
+
+  shuttingDown = true;
+
+  console.log(`${signal} received. Starting graceful shutdown...`);
+
+  server.close(async (error) => {
+    if (error) {
+      console.error("Error while closing HTTP server:", error);
+
+      process.exitCode = 1;
+    }
+
+    try {
+      if (db) {
+        await db.destroy();
+
+        console.log("Database connection pool closed.");
+      }
+
+      console.log("Graceful shutdown completed.");
+
+      process.exit(error ? 1 : 0);
+    } catch (dbError) {
+      console.error("Error while closing database connection:", dbError);
+
+      process.exit(1);
+    }
+  });
+}
+
+process.on("SIGTERM", () => {
+  shutdown("SIGTERM");
+});
+
+process.on("SIGINT", () => {
+  shutdown("SIGINT");
 });
