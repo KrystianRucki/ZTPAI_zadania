@@ -48,6 +48,10 @@ function createInMemoryRoomsRepository() {
       return rooms.find((room) => room.id === id) ?? null;
     },
 
+    async lockById(id) {
+      return rooms.find((room) => room.id === id) ?? null;
+    },
+
     async create(data) {
       const room = {
         id: nextId++,
