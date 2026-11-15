@@ -1,5 +1,7 @@
 # Room Booking API
 
+![CI](https://github.com/KrystianRucki/ZTPAI_zadania/actions/workflows/ci.yml/badge.svg)
+
 Room Booking API implemented with Node.js, Express, PostgreSQL and Knex.
 
 ## Requirements
