@@ -213,12 +213,6 @@ function createReservationsService({
         throw new NotFoundError("Reservation");
       }
 
-      /*
-       * Idempotencja:
-       * jeżeli już anulowana,
-       * niczego nie zmieniamy
-       * i NIE publikujemy eventu.
-       */
       if (reservation.status === "CANCELLED") {
         return {
           reservation,
