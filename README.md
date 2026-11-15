@@ -31,6 +31,8 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
+After copying `.env.example` to `.env`, open the `.env` file and replace the example values with the correct configuration for your environment.
+
 Build and start the application:
 
 ```bash
