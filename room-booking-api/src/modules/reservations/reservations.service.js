@@ -151,7 +151,7 @@ function createReservationsService({
 
             const existingEnd = new Date(reservation.endTime).getTime();
 
-            return start <= existingEnd && existingStart <= end;
+            return start < existingEnd && existingStart < end;
           });
 
           if (overlapping) {
