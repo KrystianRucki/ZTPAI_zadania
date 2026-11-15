@@ -151,7 +151,7 @@ function createReservationsService({
 
             const existingEnd = new Date(reservation.endTime).getTime();
 
-            return start < existingEnd && existingStart < end;
+            return start <= existingEnd && existingStart <= end;
           });
 
           if (overlapping) {
@@ -213,12 +213,6 @@ function createReservationsService({
         throw new NotFoundError("Reservation");
       }
 
-      /*
-       * Idempotencja:
-       * jeżeli już anulowana,
-       * niczego nie zmieniamy
-       * i NIE publikujemy eventu.
-       */
       if (reservation.status === "CANCELLED") {
         return {
           reservation,
