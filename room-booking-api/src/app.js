@@ -1,16 +1,19 @@
 const express = require("express");
-
 const swaggerUi = require("swagger-ui-express");
 
 const openapiDocument = require("./docs/openapi");
 
 const requestLogger = require("./middleware/requestLogger");
-
+const { createAuthenticate } = require("./middleware/authenticate");
+const authorize = require("./middleware/authorize");
 const notFound = require("./middleware/notFound");
-
 const errorHandler = require("./middleware/errorHandler");
 
-const { createAuthenticate } = require("./middleware/authenticate");
+const { createAuthService } = require("./modules/auth/auth.service");
+
+const { createAuthController } = require("./modules/auth/auth.controller");
+
+const { createAuthRouter } = require("./modules/auth/auth.routes");
 
 const {
   createBuildingsService,
@@ -42,31 +45,37 @@ const {
   createReservationsRouter,
 } = require("./modules/reservations/reservations.routes");
 
-const { createAuthService } = require("./modules/auth/auth.service");
+const { createAuditService } = require("./modules/audit/audit.service");
 
-const { createAuthController } = require("./modules/auth/auth.controller");
+const { createAuditController } = require("./modules/audit/audit.controller");
 
-const { createAuthRouter } = require("./modules/auth/auth.routes");
+const { createAuditRouter } = require("./modules/audit/audit.routes");
 
 function createApp({
   buildingsRepository,
   roomsRepository,
   reservationsRepository,
   usersRepository,
+  auditRepository,
   runInTransaction,
+  eventBus,
   jwtSecret,
   jwtExpiresIn,
-  now = () => new Date(),
 }) {
   const app = express();
 
-  app.use(requestLogger);
+  // -------------------------
+  // Global middleware
+  // -------------------------
 
+  app.use(requestLogger);
   app.use(express.json());
 
-  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
+  // -------------------------
+  // Authentication
+  // -------------------------
 
-  const requireAuth = createAuthenticate(jwtSecret);
+  const authenticate = createAuthenticate(jwtSecret);
 
   const authService = createAuthService({
     usersRepository,
@@ -76,12 +85,19 @@ function createApp({
 
   const authController = createAuthController(authService);
 
+  // -------------------------
+  // Buildings
+  // -------------------------
+
   const buildingsService = createBuildingsService({
     buildingsRepository,
-    roomsRepository,
   });
 
   const buildingsController = createBuildingsController(buildingsService);
+
+  // -------------------------
+  // Rooms
+  // -------------------------
 
   const roomsService = createRoomsService({
     roomsRepository,
@@ -90,41 +106,86 @@ function createApp({
 
   const roomsController = createRoomsController(roomsService);
 
+  // -------------------------
+  // Reservations
+  // -------------------------
+
   const reservationsService = createReservationsService({
     roomsRepository,
     reservationsRepository,
     runInTransaction,
-    now,
+    eventBus,
   });
 
   const reservationsController =
     createReservationsController(reservationsService);
 
+  // -------------------------
+  // Audit log
+  // -------------------------
+
+  const auditService = createAuditService({
+    auditRepository,
+  });
+
+  const auditController = createAuditController({
+    auditService,
+  });
+
+  // -------------------------
+  // Swagger
+  // -------------------------
+
+  app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
+
+  // -------------------------
+  // Auth
+  // -------------------------
+
   app.use(
     "/api/auth",
     createAuthRouter({
       controller: authController,
-
-      authenticate: requireAuth,
+      authenticate,
     }),
   );
 
+  // -------------------------
+  // Protected resources
+  // -------------------------
+
   app.use(
     "/api/buildings",
-    requireAuth,
+    authenticate,
     createBuildingsRouter(buildingsController),
   );
 
-  app.use("/api/rooms", requireAuth, createRoomsRouter(roomsController));
+  app.use("/api/rooms", authenticate, createRoomsRouter(roomsController));
 
   app.use(
     "/api/reservations",
-    requireAuth,
+    authenticate,
     createReservationsRouter(reservationsController),
   );
 
-  app.use(notFound);
+  // -------------------------
+  // ADMIN - audit log
+  // -------------------------
 
+  app.use(
+    "/api/admin/audit-log",
+    authenticate,
+    authorize("ADMIN"),
+    createAuditRouter({
+      auditController,
+    }),
+  );
+
+  // -------------------------
+  // Errors
+  // -------------------------
+
+  app.use(notFound);
   app.use(errorHandler);
 
   return app;
