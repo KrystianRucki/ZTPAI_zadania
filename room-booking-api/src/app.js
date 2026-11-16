@@ -64,16 +64,8 @@ function createApp({
 }) {
   const app = express();
 
-  // -------------------------
-  // Global middleware
-  // -------------------------
-
   app.use(requestLogger);
   app.use(express.json());
-
-  // -------------------------
-  // Authentication
-  // -------------------------
 
   const authenticate = createAuthenticate(jwtSecret);
 
@@ -85,19 +77,11 @@ function createApp({
 
   const authController = createAuthController(authService);
 
-  // -------------------------
-  // Buildings
-  // -------------------------
-
   const buildingsService = createBuildingsService({
     buildingsRepository,
   });
 
   const buildingsController = createBuildingsController(buildingsService);
-
-  // -------------------------
-  // Rooms
-  // -------------------------
 
   const roomsService = createRoomsService({
     roomsRepository,
@@ -105,10 +89,6 @@ function createApp({
   });
 
   const roomsController = createRoomsController(roomsService);
-
-  // -------------------------
-  // Reservations
-  // -------------------------
 
   const reservationsService = createReservationsService({
     roomsRepository,
@@ -120,10 +100,6 @@ function createApp({
   const reservationsController =
     createReservationsController(reservationsService);
 
-  // -------------------------
-  // Audit log
-  // -------------------------
-
   const auditService = createAuditService({
     auditRepository,
   });
@@ -132,15 +108,7 @@ function createApp({
     auditService,
   });
 
-  // -------------------------
-  // Swagger
-  // -------------------------
-
   app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
-
-  // -------------------------
-  // Auth
-  // -------------------------
 
   app.use(
     "/api/auth",
@@ -149,10 +117,6 @@ function createApp({
       authenticate,
     }),
   );
-
-  // -------------------------
-  // Protected resources
-  // -------------------------
 
   app.use(
     "/api/buildings",
@@ -168,10 +132,6 @@ function createApp({
     createReservationsRouter(reservationsController),
   );
 
-  // -------------------------
-  // ADMIN - audit log
-  // -------------------------
-
   app.use(
     "/api/admin/audit-log",
     authenticate,
@@ -180,10 +140,6 @@ function createApp({
       auditController,
     }),
   );
-
-  // -------------------------
-  // Errors
-  // -------------------------
 
   app.use(notFound);
   app.use(errorHandler);

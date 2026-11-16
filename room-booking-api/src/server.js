@@ -13,20 +13,11 @@ let roomsRepository;
 let reservationsRepository;
 let usersRepository;
 let auditRepository;
-
 let runInTransaction;
 
 let db = null;
 
-// ========================================
-// Repository mode
-// ========================================
-
 if (config.REPOSITORY_MODE === "memory") {
-  // --------------------------------------
-  // In-memory repositories
-  // --------------------------------------
-
   const {
     createInMemoryBuildingsRepository,
   } = require("./modules/buildings/buildings.repository.memory");
@@ -57,10 +48,6 @@ if (config.REPOSITORY_MODE === "memory") {
 
   auditRepository = createInMemoryAuditRepository();
 
-  // --------------------------------------
-  // In-memory Unit of Work
-  // --------------------------------------
-
   runInTransaction = async (fn) =>
     fn({
       buildings: buildingsRepository,
@@ -70,10 +57,6 @@ if (config.REPOSITORY_MODE === "memory") {
       reservations: reservationsRepository,
     });
 } else {
-  // --------------------------------------
-  // PostgreSQL / Knex repositories
-  // --------------------------------------
-
   db = require("./db/knex");
 
   const {
@@ -111,15 +94,7 @@ if (config.REPOSITORY_MODE === "memory") {
   runInTransaction = createKnexUnitOfWork(db);
 }
 
-// ========================================
-// Event Bus
-// ========================================
-
 const eventBus = createEventBus();
-
-// ========================================
-// Event listeners
-// ========================================
 
 registerReservationEventHandlers({
   eventBus,
@@ -127,40 +102,23 @@ registerReservationEventHandlers({
   usersRepository,
 });
 
-// ========================================
-// Express application
-// ========================================
-
 const app = createApp({
   buildingsRepository,
   roomsRepository,
   reservationsRepository,
   usersRepository,
-
-  // Zadanie 4
   auditRepository,
   eventBus,
-
   runInTransaction,
-
   jwtSecret: config.JWT_SECRET,
-
   jwtExpiresIn: config.JWT_EXPIRES_IN,
 });
-
-// ========================================
-// Start HTTP server
-// ========================================
 
 const server = app.listen(config.PORT, () => {
   console.log(
     `Server running on http://localhost:${config.PORT} (${config.REPOSITORY_MODE})`,
   );
 });
-
-// ========================================
-// Graceful shutdown
-// ========================================
 
 let shuttingDown = false;
 
@@ -197,10 +155,6 @@ async function shutdown(signal) {
     }
   });
 }
-
-// ========================================
-// Signals
-// ========================================
 
 process.on("SIGTERM", () => {
   shutdown("SIGTERM");
