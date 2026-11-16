@@ -33,7 +33,7 @@ cp .env.example .env
 Copy-Item .env.example .env
 ```
 
-After copying `.env.example` to `.env`, open the `.env` file and replace the example values with the correct configuration for your environment.
+After copying `.env.example` to `.env`, open the `.env` file and replace the example values with the correct configuration for your environment. Make sure `JWT_SECRET` is at least 32 characters long.
 
 Build and start the application:
 
